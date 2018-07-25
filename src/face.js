@@ -37,7 +37,11 @@ export default class Face extends Base {
       let voice = null;
 
       if (v) {
-        voice = new Voice(v['_locale'], v['_bIsMale'], v['_name']);
+        if(v['_voicePreferences'].length > 0){
+          voice = new Voice(v['_locale'], v['_bIsMale'], v['_voicePreferences']);
+        } else {
+          voice = new Voice(v['_locale'], v['_bIsMale'], v['_index']);
+        } 
       }
       return new Face(json['_id'], voice);
     }

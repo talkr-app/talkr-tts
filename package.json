@@ -1,6 +1,6 @@
 {
   "name": "talkr-tts",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Wraps speechSynthesis calls for applications that want to animate to the voice",
   "main": "lib/talkr-tts.js",
   "scripts": {

@@ -94,7 +94,12 @@ const languageProperties = {
   'no': 'Norwegian',
   'da': 'Danish',
   'cs': 'Czech',
-  'ar': 'Arabic'
+  'ar': 'Arabic',
+  'sv': 'Swedish',
+  'hi': "Hindi",
+  'hu': "Hungarian",
+  'nb': "Noregian",
+  'id': "Indonesian"
 };
 
 const languagePropertiesInverted = {
@@ -121,7 +126,12 @@ const languagePropertiesInverted = {
   'Norwegian': 'no',
   'Danish': 'da',
   'Czech': 'cs',
-  'Arabic': 'ar'
+  'Arabic': 'ar',
+  'Swedish':'sv',
+  "Hindi":'hi',
+  "Hungarian":'hu', 
+  "Noregian":'nb',
+  "Indonesian":'id'
 };
 
 /*
@@ -252,17 +262,34 @@ export default class Voice {
     }
     return filteredvoices.sort(sortCompare);
   }
-  static getTTSVoice(voiceObj) {
-    return Voice._getBestVoice(voiceObj.name, voiceObj.locale, voiceObj.isMale, voiceObj.index);
-  }
-  static _getBestVoice(name, locale, bIsMale, index) {
-    if (name) {
-      let namedVoice = Voice._getVoiceWithName(name);
+
+  static getVoiceFromArray(voicePreferences) {
+    for (let i = 0, l = voicePreferences.length; i < l; i++) {
+      let namedVoice = Voice._getVoiceWithName(voicePreferences[i]);
 
       if (namedVoice) {
         return namedVoice;
       }
     }
+    return null;
+  }
+  static getLanguageForTTSVoice(ttsVoice) {
+    if(ttsVoice && ttsVoice.lang && ttsVoice.lang.length >= 2){
+      return languageProperties[ttsVoice.lang.substring(0, 2)];
+    }
+    return languageProperties[Voice.defaultlocale.substring(0, 2)];
+  }
+
+  static getTTSVoice(voiceObj) {
+    let namedVoice = Voice.getVoiceFromArray(voiceObj._voicePreferences);
+
+    if (namedVoice) {
+      return namedVoice
+    }
+    return Voice._getBestVoice(voiceObj.locale, voiceObj.isMale, voiceObj.index);
+  }
+  static _getBestVoice(locale, bIsMale, index) {
+
     let matchingVoices = Voice._getBestVoices(locale, bIsMale);
 
     if (matchingVoices.length > 0) {
@@ -277,8 +304,8 @@ export default class Voice {
 
     // Try english voices if we didn't get any for the provided locale.
     if (locale !== 'en') {
-      console.warn('No voices for locale: ' + locale);
-      return Voice._getBestVoice(null, 'en', bIsMale, index);
+      console.warn('No voices for locale: ' + locale + '. Are we warmed up?');
+      return Voice._getBestVoice('en', bIsMale, index);
     }
 
     let lastResorts = [];
@@ -359,24 +386,31 @@ export default class Voice {
 
     this._locale = locale;
     this._bIsMale = bIsMale;
-    this._name = preference;
+
+    this._voicePreferences = [];
     this._index = null;
+    if (preference) {
+      if (Array.isArray(preference)) {
+        this._voicePreferences = preference;
+      } else if (!isNaN(preference)) {
+        // A number indicates we want the 0th,1st,2nd voice.
+        this._index = preference;
+      } else if (typeof preference === "string") {
+        this._voicePreferences = [preference];
+      }
+    }
+
     if (this._locale === undefined) {
       this._locale = Voice.defaultlocale;
     }
     if (this._bIsMale === undefined) {
       this._bIsMale = Voice.defaultbIsMale;
     }
-    if (this._name !== undefined) {
-      if (this._name in voiceProperties) {
-        this._bIsMale = voiceProperties[this._name].male;
+    // Set bIsMale appropriately based on preferences
+    for (let i = this._voicePreferences.length - 1; i >= 0; --i ) {
+      if (this._voicePreferences[i] in voiceProperties) {
+        this._bIsMale = voiceProperties[this._voicePreferences[i]].male;
       }
-    }
-    // A number for the name indicates we should choose a different
-    // voice than the first.
-    if (this._name && !isNaN(this._name)) {
-      this._index = this._name;
-      this._name = null;
     }
 
     Voice.defaultlocale = this._locale;
@@ -384,9 +418,6 @@ export default class Voice {
   }
   get index() {
     return this._index;
-  }
-  get name() {
-    return this._name;
   }
   get locale() {
     return this._locale;

@@ -92,17 +92,29 @@ export default class Scene extends Base {
     super.delete();
   }
 
-  playClips(startIndex) {
+  playClips(startIndex, endIndex) {
+    Scene.stop();
     Scene.playing = this;
     if (startIndex === undefined) {
       startIndex = 0;
+    } else if ( typeof (startIndex) === 'string'){
+      startIndex = parseInt(startIndex);
     }
-    let numclips = this._clips.length;
+
+    if (endIndex === undefined) {
+      endIndex = this._clips.length-1;
+    } else if ( typeof (endIndex) === 'string'){
+      endIndex = parseInt(endIndex);
+    } 
+    if( endIndex >= this._clips.length ){
+      endIndex = this._clips.length-1;
+    }
 
     this._stopped = false;
-    if (numclips <= startIndex) {
+    if (endIndex < startIndex) {
       return;
     }
+
     let onPlayUtteranceWithDur = (dur, face) => {
       Scene.eventEmitter.emit('utterancestart', {'duration': dur, 'face': face});
     };
@@ -125,7 +137,7 @@ export default class Scene extends Base {
     let clipIndex = startIndex;
 
     onPlayNextClip = () => {
-      if (clipIndex === numclips - 1) {
+      if (clipIndex >= endIndex) {
         Scene.eventEmitter.emit('scenefinished');
         Scene.playing = null;
         return;
